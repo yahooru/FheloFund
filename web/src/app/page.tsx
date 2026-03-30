@@ -1,8 +1,24 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { HomeLottie } from "@/components/home-lottie";
 import { ConnectCta } from "@/components/connect-cta";
 import { Card } from "@/components/ui/card";
+
+/** DotLottie uses canvas/WebGL — load only on client to avoid hydration/runtime crashes in production. */
+const HomeLottie = dynamic(
+  () => import("@/components/home-lottie").then((m) => m.HomeLottie),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[280px] w-full items-center justify-center lg:justify-end">
+        <div className="flex h-[280px] w-[280px] flex-col items-center justify-center gap-3 rounded-[2rem] border border-[color-mix(in_srgb,var(--accent)_22%,transparent)] bg-[color-mix(in_srgb,var(--background)_85%,black)] sm:h-[300px] sm:w-[300px]">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-[color-mix(in_srgb,var(--accent)_35%,transparent)] border-t-[var(--primary)]" aria-hidden />
+          <span className="text-xs text-[color-mix(in_srgb,var(--primary)_55%,white)]">Loading animation…</span>
+        </div>
+      </div>
+    ),
+  },
+);
 
 export const metadata: Metadata = {
   title: "Home",
