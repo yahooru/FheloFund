@@ -7,6 +7,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagm
 import { NetworkGuard } from "@/components/network-guard";
 import { useFundAddress } from "@/hooks/use-fund-address";
 import { fheloFundAbi } from "@/lib/fheloFundAbi";
+import { friendlyTxError } from "@/lib/user-errors";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { TxFeedback } from "@/components/tx-feedback";
@@ -98,7 +99,7 @@ export default function InvestPage() {
           </button>
           {error && (
             <p className="rounded-lg border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] p-3 text-sm text-[color-mix(in_srgb,var(--accent)_90%,white)]">
-              {error.message}
+              {friendlyTxError(error)}
             </p>
           )}
           {isSuccess && hash && <TxFeedback hash={hash} successMessage="Deposit confirmed on-chain." />}

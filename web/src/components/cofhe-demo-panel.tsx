@@ -18,8 +18,8 @@ export function CofheDemoPanel() {
         `CoFHE config OK for Sepolia (chain id ${chains.sepolia.id}). Environment: ${chains.sepolia.environment}. Use this as a starting point when wiring encrypted inputs to Fhenix-ready contracts.`,
       );
       void config;
-    } catch (e) {
-      setStatus(e instanceof Error ? e.message : "Failed to create CoFHE config");
+    } catch {
+      setStatus("Could not initialize the demo in this browser. Try again or use a modern desktop browser.");
     }
   }
 

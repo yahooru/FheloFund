@@ -45,7 +45,7 @@ So each share represents a pro-rata claim on **tracked** assets.
 
 ### Events (Activity page)
 
-The **Activity** tab loads `Deposit`, `Withdraw`, and `Trade` logs from the contract over the **last ~50,000 blocks** via your RPC. If the RPC is slow or rate-limited, loading may take longer or fail (see troubleshooting).
+The **Activity** tab loads `Deposit`, `Withdraw`, and `Trade` logs by calling `eth_getLogs` in **small block windows** (10 blocks per request). That matches providers such as **Alchemy’s free tier**, which reject a single `getLogs` over tens of thousands of blocks. The UI scans roughly the **latest 2,500 blocks** (see `ACTIVITY_SCAN_BLOCKS` in [`web/src/lib/get-logs-chunked.ts`](./web/src/lib/get-logs-chunked.ts)); you can raise that value if your RPC allows larger ranges. Errors are shown in plain language — raw RPC responses are never shown to users.
 
 ### Frontend stack
 
@@ -171,7 +171,7 @@ Common causes and fixes:
 | **Invalid `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`** (typo, not a UUID) | WalletConnect connector is only added if the ID matches a UUID pattern; otherwise use MetaMask. |
 | **Missing `NEXT_PUBLIC_FUND_ADDRESS`** | App still runs; banner shows — set the env var and redeploy. |
 | **Wrong network** | Switch wallet to **Sepolia** (chain 11155111). |
-| **RPC rate limits** | Set `NEXT_PUBLIC_SEPOLIA_RPC_URL` to Alchemy/Infura and redeploy. |
+| **RPC rate limits / Alchemy `eth_getLogs` block range** | The app chunks log requests (10 blocks each). If Activity is slow, your RPC may be throttling — wait and use **Refresh**, or use a paid / higher-limit endpoint. |
 
 If a page still errors, use **Try again** on the in-app error UI, check the **browser console**, and confirm Vercel env + redeploy.
 

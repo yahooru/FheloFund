@@ -2,6 +2,7 @@
 
 import { useAccount, useConnect, useDisconnect, useChainId } from "wagmi";
 import { sepolia } from "wagmi/chains";
+import { friendlyConnectError } from "@/lib/user-errors";
 
 function shortAddress(a: string) {
   return `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -30,7 +31,7 @@ export function WalletButton() {
         </button>
         {error && (
           <span className="max-w-[220px] text-right text-xs text-[color-mix(in_srgb,var(--accent)_90%,white)]">
-            {error.message}
+            {friendlyConnectError(error)}
           </span>
         )}
       </div>

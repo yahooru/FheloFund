@@ -7,6 +7,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { NetworkGuard } from "@/components/network-guard";
 import { useFundAddress } from "@/hooks/use-fund-address";
 import { fheloFundAbi } from "@/lib/fheloFundAbi";
+import { friendlyTxError } from "@/lib/user-errors";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { TxFeedback } from "@/components/tx-feedback";
@@ -114,11 +115,11 @@ export default function ManagerPage() {
           >
             {isPending || confirming ? "Confirm in wallet…" : "Execute trade (simulate P&amp;L)"}
           </button>
-          {error && (
-            <p className="rounded-lg border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] p-3 text-sm text-[color-mix(in_srgb,var(--accent)_90%,white)]">
-              {error.message}
-            </p>
-          )}
+            {error && (
+              <p className="rounded-lg border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] p-3 text-sm text-[color-mix(in_srgb,var(--accent)_90%,white)]">
+                {friendlyTxError(error)}
+              </p>
+            )}
           {isSuccess && hash && <TxFeedback hash={hash} successMessage="Trade recorded on-chain." />}
         </Card>
       )}

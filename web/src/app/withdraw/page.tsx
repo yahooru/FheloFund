@@ -7,6 +7,7 @@ import { NetworkGuard } from "@/components/network-guard";
 import { useFundAddress } from "@/hooks/use-fund-address";
 import { fheloFundAbi } from "@/lib/fheloFundAbi";
 import { fmtEth } from "@/lib/format";
+import { friendlyTxError } from "@/lib/user-errors";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { TxFeedback } from "@/components/tx-feedback";
@@ -111,11 +112,11 @@ export default function WithdrawPage() {
           >
             {isPending || confirming ? "Confirm in wallet…" : "Withdraw ETH"}
           </button>
-          {error && (
-            <p className="rounded-lg border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] p-3 text-sm text-[color-mix(in_srgb,var(--accent)_90%,white)]">
-              {error.message}
-            </p>
-          )}
+            {error && (
+              <p className="rounded-lg border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] p-3 text-sm text-[color-mix(in_srgb,var(--accent)_90%,white)]">
+                {friendlyTxError(error)}
+              </p>
+            )}
           {isSuccess && hash && <TxFeedback hash={hash} successMessage="Withdrawal confirmed on-chain." />}
         </Card>
       )}

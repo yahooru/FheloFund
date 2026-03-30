@@ -8,13 +8,15 @@ import { sepolia } from "wagmi/chains";
 import { NetworkGuard } from "@/components/network-guard";
 import { useFundAddress } from "@/hooks/use-fund-address";
 import { sepoliaTxUrl } from "@/lib/explorer";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getLogsChunked, ACTIVITY_SCAN_BLOCKS } from "@/lib/get-logs-chunked";
+import { friendlyActivityError } from "@/lib/user-errors";
 
 function isValidTxHash(h: string): h is `0x${string}` {
   return /^0x[a-fA-F0-9]{64}$/.test(h);
 }
-import { PageHeader } from "@/components/ui/page-header";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type Row =
   | { kind: "Deposit"; user: string; ethIn: bigint; sharesMinted: bigint; txHash: string; block: bigint }
@@ -48,17 +50,19 @@ export default function ActivityPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     if (!fund || !publicClient) return;
     let cancelled = false;
-    setLoading(true);
-    setErr(null);
 
     (async () => {
+      setLoading(true);
+      setErr(null);
       try {
         const latest = await publicClient.getBlockNumber();
-        const fromBlock = latest > 50000n ? latest - 50000n : 0n;
+        if (cancelled) return;
+        const fromBlock = latest > ACTIVITY_SCAN_BLOCKS ? latest - ACTIVITY_SCAN_BLOCKS : 0n;
 
         const deposit = parseAbiItem(
           "event Deposit(address indexed user, uint256 ethIn, uint256 sharesMinted)",
@@ -71,19 +75,19 @@ export default function ActivityPage() {
         );
 
         const [dLogs, wLogs, tLogs] = await Promise.all([
-          publicClient.getLogs({
+          getLogsChunked(publicClient, {
             address: fund,
             event: deposit,
             fromBlock,
             toBlock: latest,
           }),
-          publicClient.getLogs({
+          getLogsChunked(publicClient, {
             address: fund,
             event: withdraw,
             fromBlock,
             toBlock: latest,
           }),
-          publicClient.getLogs({
+          getLogsChunked(publicClient, {
             address: fund,
             event: trade,
             fromBlock,
@@ -96,7 +100,7 @@ export default function ActivityPage() {
         const mapped: Row[] = [];
 
         for (const l of dLogs) {
-          const a = l.args as { user: string; ethIn: bigint; sharesMinted: bigint };
+          const a = (l as unknown as { args: { user: string; ethIn: bigint; sharesMinted: bigint } }).args;
           mapped.push({
             kind: "Deposit",
             user: a.user,
@@ -107,7 +111,7 @@ export default function ActivityPage() {
           });
         }
         for (const l of wLogs) {
-          const a = l.args as { user: string; sharesBurned: bigint; ethOut: bigint };
+          const a = (l as unknown as { args: { user: string; sharesBurned: bigint; ethOut: bigint } }).args;
           mapped.push({
             kind: "Withdraw",
             user: a.user,
@@ -118,7 +122,7 @@ export default function ActivityPage() {
           });
         }
         for (const l of tLogs) {
-          const a = l.args as { manager: string; pnlDelta: bigint; newTotalAssets: bigint };
+          const a = (l as unknown as { args: { manager: string; pnlDelta: bigint; newTotalAssets: bigint } }).args;
           mapped.push({
             kind: "Trade",
             manager: a.manager,
@@ -132,7 +136,8 @@ export default function ActivityPage() {
         mapped.sort((x, y) => (x.block > y.block ? -1 : x.block < y.block ? 1 : 0));
         setRows(mapped.slice(0, 100));
       } catch (e: unknown) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Failed to load logs");
+        console.error("[FheloFund] activity load failed", e);
+        if (!cancelled) setErr(friendlyActivityError());
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -141,20 +146,20 @@ export default function ActivityPage() {
     return () => {
       cancelled = true;
     };
-  }, [fund, publicClient]);
+  }, [fund, publicClient, reloadToken]);
 
   return (
     <NetworkGuard>
       <PageHeader
         eyebrow="On-chain"
         title="Activity"
-        description="Indexed from the fund contract: Deposit, Withdraw, and Trade events (last ~50k blocks). Click a transaction to verify on Etherscan."
+        description="Recent deposits, withdrawals, and manager trades (loaded in small block batches so it works with standard RPC plans). Verify any transaction on Etherscan."
       />
 
       {!fund && (
         <Card className="border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]">
           <p className="text-sm text-[color-mix(in_srgb,var(--primary)_85%,white)]">
-            Set <code className="font-mono text-[var(--primary)]">NEXT_PUBLIC_FUND_ADDRESS</code> first.
+            The app needs a fund address configured. If you’re an admin, add it in the deployment environment.
           </p>
         </Card>
       )}
@@ -170,18 +175,51 @@ export default function ActivityPage() {
         </div>
       )}
 
-      {err && (
+      {err && !loading && (
         <Card className="border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]">
-          <p className="text-sm text-[color-mix(in_srgb,var(--accent)_90%,white)]">{err}</p>
+          <p className="text-sm leading-relaxed text-[color-mix(in_srgb,var(--primary)_88%,white)]">{err}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setErr(null);
+              setReloadToken((t) => t + 1);
+            }}
+            className="mt-4 rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-[var(--background)]"
+          >
+            Try again
+          </button>
         </Card>
       )}
 
       {fund && !loading && !err && rows.length === 0 && (
         <Card>
           <p className="text-[color-mix(in_srgb,var(--primary)_75%,white)]">
-            No events in this window yet. After you deposit or trade, refresh here to see live logs.
+            No activity in the latest window yet. After you deposit or trade, use Refresh below or check back
+            shortly.
           </p>
+          <button
+            type="button"
+            onClick={() => setReloadToken((t) => t + 1)}
+            className="mt-4 rounded-xl border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] px-4 py-2 text-sm font-semibold text-[var(--accent)]"
+          >
+            Refresh
+          </button>
         </Card>
+      )}
+
+      {!loading && !err && rows.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-[color-mix(in_srgb,var(--primary)_50%,white)]">
+            Showing up to 100 most recent events from the latest scanned range.
+          </p>
+          <button
+            type="button"
+            onClick={() => setReloadToken((t) => t + 1)}
+            className="rounded-lg border border-[color-mix(in_srgb,var(--accent)_35%,transparent)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition hover:border-[var(--accent)]"
+          >
+            Refresh
+          </button>
+        </div>
       )}
 
       <ul className="space-y-3">
@@ -234,7 +272,7 @@ export default function ActivityPage() {
                     rel="noopener noreferrer"
                     className="shrink-0 rounded-lg border border-[color-mix(in_srgb,var(--accent)_35%,transparent)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition hover:border-[var(--accent)]"
                   >
-                    View tx
+                    View on Etherscan
                   </a>
                 )}
               </div>
