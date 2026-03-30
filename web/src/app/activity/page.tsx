@@ -8,6 +8,10 @@ import { sepolia } from "wagmi/chains";
 import { NetworkGuard } from "@/components/network-guard";
 import { useFundAddress } from "@/hooks/use-fund-address";
 import { sepoliaTxUrl } from "@/lib/explorer";
+
+function isValidTxHash(h: string): h is `0x${string}` {
+  return /^0x[a-fA-F0-9]{64}$/.test(h);
+}
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -223,9 +227,9 @@ export default function ActivityPage() {
                     Block {r.block.toString()}
                   </p>
                 </div>
-                {r.txHash && (
+                {isValidTxHash(r.txHash) && (
                   <a
-                    href={sepoliaTxUrl(r.txHash as `0x${string}`)}
+                    href={sepoliaTxUrl(r.txHash)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="shrink-0 rounded-lg border border-[color-mix(in_srgb,var(--accent)_35%,transparent)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition hover:border-[var(--accent)]"
