@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Next.js
+web/.next/
+web/out/
+web/build/
+
+# Hardhat
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+
+# Debug / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+coverage/
+coverage.json
+.vercel

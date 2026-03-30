@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Three-color system: background, primary, accent */
+:root {
+  --background: #0b1120;
+  --primary: #2dd4bf;
+  --accent: #818cf8;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: color-mix(in srgb, var(--primary) 88%, white);
+  background: var(--background);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--background);
+}
+
+a {
+  color: var(--primary);
+}
+
+a:hover {
+  color: color-mix(in srgb, var(--primary) 70%, white);
+}
+
+/* Focus rings — accessible, on-theme */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 70%, transparent);
+  outline-offset: 2px;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
